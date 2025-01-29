@@ -44,9 +44,11 @@ class SearchEngine():
 	def __init__(self, sources: list[SearchSource]):
 		self.sources = sources
 
-	def search(self, query) -> List[SearchResult]:
+	def search(self, query, subMetaOnly = False) -> List[SearchResult]:
 		results = []
 		for source in self.sources:
+			if subMetaOnly and source.source != "SubMeta":
+				continue
 			result = source.search(query)
 			if result is not None:
 				for rr in result:
