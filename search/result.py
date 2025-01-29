@@ -2,6 +2,24 @@
 from typing import List
 
 
+class Chapter():
+	def __init__(self, title, time):
+		self.title = title
+		self.time = time
+	
+	def __str__(self):
+		return f"{self.title} - {self.time}"
+
+
+class EpisodeResult():
+	def __init__(self, title, chapters: List[Chapter]):
+		self.title = title
+		self.chapters = chapters
+
+	def __str__(self):
+		return f"{self.title} - {self.chapters}"
+	
+
 class Review():
 	def __init__(self, score, total):
 		self.score = score
@@ -17,7 +35,7 @@ Usage:
 
 """
 class InstructionalResult():
-	def __init__(self, title, description = "", url = "", source = "", image = "", instructor: List[str] = [], review = None, category: List[str] = [], episodes =[]):
+	def __init__(self, title, description = "", url = "", source = "", image = "", instructor: List[str] = [], review = None, category: List[str] = [], episodes: List[EpisodeResult] =[]):
 		self.title = title
 		self.url = url
 		self.description = description
@@ -35,19 +53,4 @@ class InstructionalResult():
 		return f"{self.title} - {self.description} - {self.url} - {self.source} - {self.image} - {self.instructor} - {self.review} - {self.category} - {self.episodesToString()}"
 
 
-class EpisodeResult():
-	def __init__(self, title, chapters):
-		self.title = title
-		self.chapters = chapters
 
-	def __str__(self):
-		return f"{self.title} - {self.chapters}"
-	
-
-class Chapter():
-	def __init__(self, title, time):
-		self.title = title
-		self.time = time
-	
-	def __str__(self):
-		return f"{self.title} - {self.time}"
