@@ -1,3 +1,4 @@
+import os
 import re
 import html
 import xml.etree.ElementTree as ET
@@ -58,11 +59,9 @@ class NFODocument():
 		self.add("mpaa", "NR")
 		pass
 
-	def add_episode(self, episode: EpisodeResult, index: int):
+	def add_episode(self, episode: EpisodeResult):
 		self.add("title", episode.title)
-		self.add("showtitle", episode.title)
-		self.add("season", "1")
-		self.add("episode", str(index))
+		self.add("episodedetails", episode.description)
 
 	def __str__(self):
 		return ET.tostring(self.root, encoding='utf8').decode('utf8')

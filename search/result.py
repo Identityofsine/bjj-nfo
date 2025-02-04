@@ -12,8 +12,9 @@ class Chapter():
 
 
 class EpisodeResult():
-	def __init__(self, title, chapters: List[Chapter]):
+	def __init__(self, title, chapters: List[Chapter], description = ""):
 		self.title = title
+		self.description = ""
 		self.chapters = chapters
 
 	def __str__(self):

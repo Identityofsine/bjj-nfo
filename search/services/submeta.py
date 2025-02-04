@@ -4,6 +4,7 @@ import requests
 
 from search.result import EpisodeResult, InstructionalResult
 from search.search import SearchSource
+from search.services.bjjfanatics import API_LINK
 from search.titlematcher.titlematcher import Entry, TitleMatcher
 from search.result import Chapter as ChapterResult
 
@@ -80,35 +81,74 @@ class CoursesPageResult(TypedDict):
 	hasMore: bool
 	errors: Optional[List[ErrorsFields]]
 
+class CoursesSearchResult(TypedDict):
+	courses: List[Course]
+
 class GetCoursesPageResponse(TypedDict):
 	result: CoursesPageResult
 
 
+
 end_point = "https://b.submeta.io/api"
-def create_request_object(offset: int, creatorHandle: str) -> dict:
+def create_request_object(offset: int, creatorHandle: str, search: str ="") -> dict:
 	obj = {
-		"operationName": "GetCoursesPage",
+		"operationName": "SearchCourses",
 		"variables": {
 			"creatorHandle": creatorHandle,
-			"offset": offset
+			"searchTerm": search,
+			"offset": offset,
+			"limit": 10000
 		},
-		"query": "query GetCoursesPage($creatorHandle: String, $offset: Int) {\n  result: getCoursesPage(creatorHandle: $creatorHandle, offset: $offset) {\n    groupings {\n      ...BaseCourseGrouping\n      __typename\n    }\n    hasMore\n    errors {\n      ...ErrorsFields\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment BaseCourseGrouping on CourseGrouping {\n  groupingTitle\n  totalCount\n  courses {\n    ...CourseFieldsForCards\n    ...UserCourseFields\n    __typename\n  }\n  __typename\n}\n\nfragment CourseFieldsForCards on Course {\n  ...BaseCourseFields\n  duration\n  category\n  authors {\n    id\n    handle\n    name\n    role\n    bio\n    __typename\n  }\n  contentCount {\n    videos\n    __typename\n  }\n  isNew\n  lastContent\n  chapterCount\n  charge\n  __typename\n}\n\nfragment BaseCourseFields on Course {\n  id\n  title\n  slug\n  description\n  level\n  publishedAt\n  category\n  cover {\n    fileName\n    __typename\n  }\n  charge\n  vimeo\n  authors {\n    id\n    handle\n    name\n    bio\n    role\n    connectAccountId\n    prices {\n      ...SubscriptionPriceFields\n      __typename\n    }\n    avatar {\n      fileName\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment SubscriptionPriceFields on Price {\n  ...BasePriceFields\n  id\n  billingPeriod\n  __typename\n}\n\nfragment BasePriceFields on Price {\n  id\n  currency\n  unitAmount\n  status\n  connectAccountId\n  __typename\n}\n\nfragment UserCourseFields on Course {\n  progress\n  lastContent\n  __typename\n}\n\nfragment ErrorsFields on ErrorOutput {\n  key\n  message\n  __typename\n}\n"
+	  "query": "query SearchCourses($searchTerm: String, $creators: [String], $filter: CourseFilter, $offset: Int, $limit: Int) {\n  result: searchCourses(\n    searchTerm: $searchTerm\n    creators: $creators\n    filter: $filter\n    offset: $offset\n    limit: $limit\n  ) {\n    courses {\n      ... on Course {\n        ...CourseFieldsForCards\n        ...UserCourseFields\n        __typename\n      }\n      __typename\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment CourseFieldsForCards on Course {\n  ...BaseCourseFields\n  duration\n  category\n  authors {\n    id\n    handle\n    name\n    role\n    bio\n    __typename\n  }\n  contentCount {\n    videos\n    __typename\n  }\n  isNew\n  lastContent\n  chapterCount\n  charge\n  __typename\n}\n\nfragment BaseCourseFields on Course {\n  id\n  title\n  slug\n  description\n  level\n  publishedAt\n  category\n  cover {\n    fileName\n    __typename\n  }\n  charge\n  vimeo\n  authors {\n    id\n    handle\n    name\n    bio\n    role\n    connectAccountId\n    prices {\n      ...SubscriptionPriceFields\n      __typename\n    }\n    avatar {\n      fileName\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment SubscriptionPriceFields on Price {\n  ...BasePriceFields\n  id\n  billingPeriod\n  __typename\n}\n\nfragment BasePriceFields on Price {\n  id\n  currency\n  unitAmount\n  status\n  connectAccountId\n  __typename\n}\n\nfragment UserCourseFields on Course {\n  progress\n  lastContent\n  __typename\n}",
 	}
 	return obj
+
+def create_episode_request_object(course: Course, creatorHandle: str) -> dict:
+
+	obj = {
+		"operationName": "GetCourse",
+		"variables": {
+			"courseId": str(course["id"]),
+		},
+		"query": "query GetCourse($courseSlug: String, $creatorHandle: String, $courseId: ID) {\n  result: getCourse(\n    courseSlug: $courseSlug\n    creatorHandle: $creatorHandle\n    courseId: $courseId\n  ) {\n    course {\n      id\n      ...EntireCourseLoggedOut\n      __typename\n    }\n    errors {\n      ...ErrorsFields\n      __typename\n    }\n    __typename\n  }\n}\n\nfragment EntireCourseLoggedOut on Course {\n  ...CourseFields\n  chapters {\n    ...ChapterFields\n    contents {\n      ... on Video {\n        id\n        title\n        duration\n        __typename\n      }\n      ... on Group {\n        id\n        __typename\n      }\n      __typename\n    }\n    __typename\n  }\n  prices {\n    ...BasePriceFields\n    __typename\n  }\n  __typename\n}\n\nfragment CourseFields on Course {\n  ...BaseCourseFields\n  duration\n  contentCount {\n    videos\n    exercises\n    __typename\n  }\n  __typename\n}\n\nfragment BaseCourseFields on Course {\n  id\n  title\n  slug\n  description\n  level\n  publishedAt\n  category\n  cover {\n    fileName\n    __typename\n  }\n  charge\n  vimeo\n  authors {\n    id\n    handle\n    name\n    bio\n    role\n    connectAccountId\n    prices {\n      ...SubscriptionPriceFields\n      __typename\n    }\n    avatar {\n      fileName\n      __typename\n    }\n    __typename\n  }\n  __typename\n}\n\nfragment SubscriptionPriceFields on Price {\n  ...BasePriceFields\n  id\n  billingPeriod\n  __typename\n}\n\nfragment BasePriceFields on Price {\n  id\n  currency\n  unitAmount\n  status\n  connectAccountId\n  __typename\n}\n\nfragment ChapterFields on Chapter {\n  id\n  hidden\n  title\n  order\n  __typename\n}\n\nfragment ErrorsFields on ErrorOutput {\n  key\n  message\n  __typename\n}\n" 
+	}
+	return obj
+
+
 
 class SubMeta(SearchSource):
 
 	courseIndex: List[Course] = []
 
-	def __init__(self):
+	def __init__(self, limit = 1):
 		super().__init__("SubMeta")
-		self.courseIndex = self.get_all_courses("lachlangiles")
+		#self.courseIndex = self.get_all_courses("lachlangiles")
+		self.limit = limit
 	
 	def search(self, query) -> List[InstructionalResult] | None:
 		print(f"Searching SubMeta for {query}")
-		c = self.get_all_courses(query)
+		c = self.search_for_course(query, "lachlangiles")
 		b = self.match_course(c, query)
-		return [self.course_to_instructional_result(b)] if b is not None else None
+		if b is None:
+			return None
+		results = []
+		for course in b:
+			results.append(self.course_to_instructional_result(course))
+		return results
+
+	def search_for_course(self, query: str, creatorHandle: str) -> List[Course]:
+		requestbody = create_request_object(0, creatorHandle, query)
+		r = requests.post(end_point, json=requestbody)
+		response = r.json()
+		data = response["data"]
+		if data is None:
+			return []
+		result = cast(CoursesSearchResult, data["result"])
+		if result is None:
+			return []
+		courses = result["courses"]
+		return courses
+
 
 	def get_all_courses(self, creatorHandle: str, offset: int = 0) -> List[Course]:
 		if len(self.courseIndex) > 0:
@@ -132,17 +172,29 @@ class SubMeta(SearchSource):
 			courses.extend(self.get_all_courses(creatorHandle, offset + 3))
 		return courses
 
-	def match_course(self, course: List[Course], query: str) -> Optional[Course]:
+	def match_course(self, course: List[Course], query: str) -> Optional[List[Course]]:
 		titlematcher = TitleMatcher(query, [Entry(title=c["title"], index=i) for i, c in enumerate(course)])
 		best_matches = titlematcher.get_best_matches()
 		if len(best_matches) == 0:
 			return None
-		best_match = best_matches[0]
-		return course[best_match[2]]
+
+		if self.limit > 1:
+			results = []
+			i = 0
+			for match in best_matches:
+				if i >= self.limit:
+					break
+				results.append(course[match[2]])
+				i += 1
+			return results
+		else: 
+			best_match = best_matches[0]
+			return [course[best_match[2]]]
 
 	def course_to_instructional_result(self, course: Course) -> InstructionalResult:
 		return InstructionalResult(
 			title=course["title"],
+			source="SubMeta",
 			description=course["description"] or '',
 			category=[course["category"] or '', course["level"] or '', ],
 			image=f"https://optimg.submeta.io/uploads/{course["cover"]["fileName"]}",
@@ -151,16 +203,26 @@ class SubMeta(SearchSource):
 		)
 
 	def get_episodes_from_course(self, course: Course) -> List[EpisodeResult]:
-		author = course["authors"][0]
-		if author["handle"] is None:
-			return []
-		url = f"https://submeta.io/_next/data/vG6OAhPes7Gnc-d38RYqf/@lachlangiles/courses/{course['slug']}.json?username={author['handle']}"
-		r = requests.get(url)
+		body = create_episode_request_object(course, "lachlangiles")
+
+		r = requests.post(end_point, json=body)
 		if r.status_code != 200:
+			print(f"Error: {r.status_code}")
 			return []
-		pageProps = r.json()["pageProps"]
-		course = pageProps["course"]
-		chapters = cast(List[Chapter], course["chapters"])
+
+		data = r.json()["data"]
+		if data is None:
+			return []
+		result = data["result"]
+		if result is None:
+			return []
+		course = cast(Course, result["course"])
+		if course is None:
+			return []
+		chapters = course["chapters"]
+		if chapters is None:
+			return []
+
 		#each chapter acts as a video
 		episodes = []
 		for episode in chapters:
@@ -172,6 +234,5 @@ class SubMeta(SearchSource):
 						time=str(chapter["duration"]
 					)))
 			episodes.append(EpisodeResult(title=episode["title"], chapters=chapterMarks))
-		print(episodes)
 
 		return episodes

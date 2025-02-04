@@ -12,7 +12,7 @@ from search.services.submeta import SubMeta
 bjj = SearchEngine(
 	[
 		BJJFanatics(1),
-		SubMeta()
+		SubMeta(5)
 	]
 )
 
@@ -111,6 +111,8 @@ def main():
 			print(f"Selected: {result}")
 			nfo = NFODocument("tvshow")
 			nfo.add_instructional_result(result.results[0])
+			episodes = result.results[0].episodes
+
 			try:
 				# change the name of the folder to the title of the instructional
 				os.rename(f"{path}/{file}", f"{path}/{sanitize_filename(result.results[0].title)}")
